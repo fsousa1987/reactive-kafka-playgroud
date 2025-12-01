@@ -25,7 +25,8 @@ public class Lec01KafkaConsumer {
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092",
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
-                ConsumerConfig.GROUP_ID_CONFIG, "demo-group"
+                ConsumerConfig.GROUP_ID_CONFIG, "demo-group-123",
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
         );
 
         var options = ReceiverOptions
