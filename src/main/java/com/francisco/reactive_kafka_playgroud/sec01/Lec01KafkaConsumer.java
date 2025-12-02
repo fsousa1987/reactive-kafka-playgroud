@@ -12,8 +12,12 @@ import java.util.Map;
 
 /*
     goal: to demo a simple Kafka consumer using reactor Kafka
-
     producer --> Kafka broker <---> consumer
+
+    topic: order-events
+    partitions: 1
+    log-end-offset: 15
+    current-offset: 15
 */
 public class Lec01KafkaConsumer {
 
@@ -38,6 +42,7 @@ public class Lec01KafkaConsumer {
                 .create(options)
                 .receive()
                 .doOnNext(r -> LOG.info("key: {}, value: {}", r.key(), r.value()))
+                .doOnNext(r -> r.receiverOffset().acknowledge())
                 .subscribe();
     }
 
