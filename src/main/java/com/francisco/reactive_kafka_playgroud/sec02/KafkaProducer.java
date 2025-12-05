@@ -35,10 +35,11 @@ public class KafkaProducer {
                 .map(i -> new ProducerRecord<>("order-events", i.toString(), "order-" + i))
                 .map(pr -> SenderRecord.create(pr, pr.key()));
 
-        KafkaSender
-                .create(options)
-                .send(flux)
+        var sender = KafkaSender.create(options);
+
+        sender.send(flux)
                 .doOnNext(r -> LOG.info("correlation id: {}", r.correlationMetadata()))
+                .doOnComplete(sender::close)
                 .subscribe();
     }
 
