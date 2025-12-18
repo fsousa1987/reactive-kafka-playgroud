@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
 
@@ -48,6 +49,7 @@ public class KafkaConsumer {
 
     private static Mono<Void> batchProcess(Flux<ConsumerRecord<Object, Object>> flux) {
         return flux
+                .publishOn(Schedulers.boundedElastic()) // just for demo
                 .doFirst(() -> LOG.info("----------------------"))
                 .doOnNext(r -> LOG.info("key: {}, value: {}", r.key(), r.value()))
                 .then(Mono.delay(Duration.ofSeconds(1)))
