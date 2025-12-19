@@ -41,6 +41,8 @@ public class KafkaConsumer {
                 .create(options)
                 .receive()
                 .groupBy(r -> Integer.parseInt(r.key()) % 5) // just for demo
+                // we can also group by r.partitions()
+                // r.key().hashCode() % 5
                 .flatMap(KafkaConsumer::batchProcess)
                 .subscribe();
     }
