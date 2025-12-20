@@ -15,9 +15,9 @@ import java.util.Map;
 /*
     error handling demo: a simple processing issue
 */
-public class KafkaConsumer {
+public class KafkaConsumerV1 {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumerV1.class);
 
     static void main() {
 
