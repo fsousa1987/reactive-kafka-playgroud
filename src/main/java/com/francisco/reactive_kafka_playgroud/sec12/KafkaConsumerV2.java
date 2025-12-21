@@ -49,11 +49,11 @@ public class KafkaConsumerV2 {
         return Mono.just(receiverRecord)
                 .doOnNext(r -> {
                     var index = ThreadLocalRandom.current().nextInt(1, 100);
-                    LOG.info("key: {}, value: {}", r.key(), r.value().toString().toCharArray()[index]);
+                    LOG.info("key: {}, index: {}, value: {}", r.key(), index, r.value().toString().toCharArray()[index]);
                 })
-                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)))
+                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)).onRetryExhaustedThrow((_, signal) -> signal.failure()))
                 .doOnError(ex -> LOG.error(ex.getMessage()))
-                .doFinally(s -> receiverRecord.receiverOffset().acknowledge())
+                .doFinally(_ -> receiverRecord.receiverOffset().acknowledge())
                 .onErrorComplete()
                 .then();
     }
