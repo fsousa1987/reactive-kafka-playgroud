@@ -10,6 +10,8 @@ import reactor.kafka.sender.SenderRecord;
 import reactor.kafka.sender.SenderResult;
 import reactor.util.retry.Retry;
 
+import java.util.function.Function;
+
 public class ReactiveDeadLetterTopicProducer<K, V> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReactiveDeadLetterTopicProducer.class);
@@ -34,6 +36,16 @@ public class ReactiveDeadLetterTopicProducer<K, V> {
                 record.value()
         );
         return SenderRecord.create(pr, pr.key());
+    }
+
+    public Function<Mono<ReceiverRecord<K, V>>, Mono<Void>> recordProcessingErrorHandler() {
+        return mono -> mono
+                .retryWhen(this.retrySpec)
+                .onErrorMap(ex -> ex.getCause() instanceof RecordProcessingException, Throwable::getCause)
+                .doOnError(ex -> LOG.error(ex.getMessage()))
+                .onErrorResume(RecordProcessingException.class, ex -> this.produce(ex.getRecord())
+                        .then(Mono.fromRunnable(() -> ex.getRecord().receiverOffset().acknowledge())))
+                .then();
     }
 
 }

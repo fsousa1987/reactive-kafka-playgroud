@@ -11,8 +11,9 @@ public class RecordProcessingException extends RuntimeException {
         this.record = record;
     }
 
-    public ReceiverRecord<?, ?> getRecord() {
-        return record;
+    @SuppressWarnings("unchecked")
+    public <K, V> ReceiverRecord<K, V> getRecord() {
+        return (ReceiverRecord<K, V>) record;
     }
 
 }
