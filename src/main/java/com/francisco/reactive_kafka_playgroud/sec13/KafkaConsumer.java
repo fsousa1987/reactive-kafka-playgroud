@@ -1,19 +1,20 @@
 package com.francisco.reactive_kafka_playgroud.sec13;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
-import reactor.kafka.receiver.ReceiverRecord;
+import reactor.kafka.sender.KafkaSender;
+import reactor.kafka.sender.SenderOptions;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 /*
     error handling demo: dead letter topic
@@ -23,7 +24,32 @@ public class KafkaConsumer {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);
 
     static void main() {
+        var dltProducer = deadLetterTopicProducer();
+        var processor = new OrderEventProcessor(dltProducer);
+        var receiver = kafkaReceiver();
 
+        receiver.receive()
+                .concatMap(processor::process)
+                .subscribe();
+    }
+
+    private static ReactiveDeadLetterTopicProducer<String, String> deadLetterTopicProducer() {
+        var producerConfig = Map.<String, Object>of(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092",
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class
+        );
+
+        var options = SenderOptions.<String, String>create(producerConfig);
+        var sender = KafkaSender.create(options);
+
+        return new ReactiveDeadLetterTopicProducer<>(
+                sender,
+                Retry.fixedDelay(2, Duration.ofSeconds(1))
+        );
+    }
+
+    private static KafkaReceiver<String, String> kafkaReceiver() {
         var consumerConfig = Map.<String, Object>of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092",
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
@@ -33,29 +59,9 @@ public class KafkaConsumer {
                 ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "1"
         );
 
-        var options = ReceiverOptions
-                .create(consumerConfig)
-                .subscription(List.of("order-events"));
+        var options = ReceiverOptions.<String, String>create(consumerConfig).subscription(List.of("order-events"));
 
-        KafkaReceiver
-                .create(options)
-                .receive()
-                .log()
-                .concatMap(KafkaConsumer::process)
-                .subscribe();
-    }
-
-    private static Mono<Void> process(ReceiverRecord<Object, Object> receiverRecord) {
-        return Mono.just(receiverRecord)
-                .doOnNext(r -> {
-                    var index = ThreadLocalRandom.current().nextInt(1, 10);
-                    LOG.info("key: {}, index: {}, value: {}", r.key(), index, r.value().toString().toCharArray()[index]);
-                })
-                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)).onRetryExhaustedThrow((_, signal) -> signal.failure()))
-                .doOnError(ex -> LOG.error(ex.getMessage()))
-                .doFinally(_ -> receiverRecord.receiverOffset().acknowledge())
-                .onErrorComplete()
-                .then();
+        return KafkaReceiver.create(options);
     }
 
 }
