@@ -59,7 +59,8 @@ public class KafkaConsumer {
                 ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "1"
         );
 
-        var options = ReceiverOptions.<String, String>create(consumerConfig).subscription(List.of("order-events"));
+        var options = ReceiverOptions.<String, String>create(consumerConfig)
+                .subscription(List.of("order-events", "order-events-dlt"));
 
         return KafkaReceiver.create(options);
     }

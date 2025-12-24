@@ -10,11 +10,10 @@ import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
 import reactor.kafka.sender.SenderRecord;
 
-import java.time.Duration;
 import java.util.Map;
 
 /*
-    error handling demo: a simple processing issue
+    error handling demo: dead letter topic
 */
 public class KafkaProducer {
 
@@ -30,8 +29,7 @@ public class KafkaProducer {
 
         var options = SenderOptions.<String, String>create(producerConfig);
 
-        var flux = Flux.interval(Duration.ofMillis(50))
-                .take(10_000)
+        var flux = Flux.range(1, 100)
                 .map(i -> new ProducerRecord<>("order-events", i.toString(), "order-" + i))
                 .map(pr -> SenderRecord.create(pr, pr.key()));
 
